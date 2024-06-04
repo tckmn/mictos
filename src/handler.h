@@ -1,20 +1,18 @@
 #ifndef __HANDLER_H__
 #define __HANDLER_H__
 
+#include <string>
 #include <png.h>
 
-struct category {
-    char *dir;
-};
+typedef struct { unsigned int w; unsigned int h; } dim;
+bool operator==(const dim &d1, const dim &d2) { return d1.w == d2.w && d1.h == d2.h; }
 
-const struct category NO_MATCH = (struct category) { 0 };
-
-struct handler {
-    int w;
-    int h;
-    int (*testfn)(png_bytepp);
-    struct category cat;
-    struct handler *next;
+class Handler {
+    public:
+        virtual dim dims() const = 0;
+        virtual std::string dir() const = 0;
+        virtual bool test(png_bytepp) const = 0;
+        virtual ~Handler() {};
 };
 
 #endif
