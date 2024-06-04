@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <dirent.h>
+#include <stdio.h>
 #include <png.h>
 #include "image.h"
 #include "handler.h"
@@ -20,9 +21,13 @@
 #define IGNORE_ALL_CACHED 0
 
 // new handlers here
-#include "sts.cpp"
+#include "handler/adofai.cpp"
+#include "handler/balatro.cpp"
+#include "handler/sts.cpp"
 std::vector<std::unique_ptr<Handler>> init_handlers() {
     auto handlers = std::vector<std::unique_ptr<Handler>>();
+    handlers.push_back(std::make_unique<HandlerADOFAI>());
+    handlers.push_back(std::make_unique<HandlerBalatro>());
     handlers.push_back(std::make_unique<HandlerSTS>());
     return handlers;
 }
@@ -54,31 +59,32 @@ int main(int argc, char* argv[]) {
     struct dirent *d;
 
     while ((d = readdir(input))) {
-        std::string name = d->d_name;
+        std::string name = d->d_name, fullpath = std::string(INPUT_DIR) + "/" + name;
         if (!name.ends_with(".png")) continue;
 
         // check cache to see if size is illegal
         bool cached = cache.contains(name);
         // TODO check legal size, skip
 
-        printf("reading %s\n", d->d_name);
-
-        Image img(std::string(INPUT_DIR) + "/" + name);
+        std::cout << "reading " << name << std::endl;
+        Image img(fullpath);
 
         std::string dir;
         for (const auto &handler : handlers) {
             if (handler->dims() == img.dims() && handler->test(img)) {
-                std::cout << "matched! " << handler->dir() << std::endl;
                 dir = handler->dir();
                 break;
             }
         }
 
         if (dir.empty()) {
-            printf("no handler, %s\n", cached ? "already cached" : "adding to cache");
+            std::cout << "no handler for " << img.dims().w << "x" << img.dims().h << ", " << (cached ? "already cached" : "adding to cache") << std::endl;
             if (!cached) {
                 cachefile << img.dims().w << ' ' << img.dims().h << ' ' << d->d_name << std::endl;
             }
+        } else {
+            std::cout << "found match, moving to " << dir << std::endl;
+            rename(fullpath.c_str(), (std::string(OUTPUT_DIR) + "/" + dir + "/" + name).c_str());
         }
     }
 

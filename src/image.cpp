@@ -1,4 +1,7 @@
+#include <iostream>
 #include "image.h"
+
+#define CHANNELS 4
 
 bool operator==(const dim &d1, const dim &d2) { return d1.w == d2.w && d1.h == d2.h; }
 
@@ -11,9 +14,10 @@ Image::Image(std::string fname) {
     rows = png_get_rows(read, info);
     fclose(fp);
 
-    // TODO check
-    /* if (png_get_channels(read, info) != CHANNELS) { */
-    /* } */
+    if (png_get_channels(read, info) != CHANNELS) {
+        std::cerr << "wrong number of channels?? " << fname << std::endl;
+        exit(1);
+    }
 }
 
 Image::~Image() {
@@ -22,4 +26,8 @@ Image::~Image() {
 
 dim Image::dims() const {
     return { png_get_image_width(read, info), png_get_image_height(read, info) };
+}
+
+bool Image::differs(const Image &other, int y, int x) const {
+    return rows[y][CHANNELS*x] != other.rows[y][CHANNELS*x];
 }
