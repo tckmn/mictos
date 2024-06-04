@@ -21,14 +21,15 @@
 #define IGNORE_ALL_CACHED 0
 
 // new handlers here
-#include "handler/adofai.cpp"
-#include "handler/balatro.cpp"
-#include "handler/sts.cpp"
+#include "handler/generic.cpp"
 std::vector<std::unique_ptr<Handler>> init_handlers() {
     auto handlers = std::vector<std::unique_ptr<Handler>>();
-    handlers.push_back(std::make_unique<HandlerADOFAI>());
-    handlers.push_back(std::make_unique<HandlerBalatro>());
-    handlers.push_back(std::make_unique<HandlerSTS>());
+    handlers.push_back(std::make_unique<HandlerGeneric>("adofai", "ref/adofai.png", 1020, 869, 1022, 990));
+    handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-normal.png", 767, 96, 987, 96));
+    handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-overlay.png", 767, 96, 987, 96));
+    handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-win.png", 767, 96, 987, 96));
+    handlers.push_back(std::make_unique<HandlerGeneric>("ftl", "ref/ftl.png", 17, 14, 40, 90));
+    handlers.push_back(std::make_unique<HandlerGeneric>("sts", "ref/sts.png", 0, 0, 17, 1877));
     return handlers;
 }
 
