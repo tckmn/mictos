@@ -7,6 +7,8 @@
 
 #include <dirent.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <png.h>
 #include "image.h"
 #include "handler.h"
@@ -22,12 +24,18 @@
 
 // new handlers here
 #include "handler/generic.cpp"
+#include "handler/dd-fight.cpp"
 std::vector<std::unique_ptr<Handler>> init_handlers() {
     auto handlers = std::vector<std::unique_ptr<Handler>>();
     handlers.push_back(std::make_unique<HandlerGeneric>("adofai", "ref/adofai.png", 1020, 869, 1022, 990));
+    handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-lose.png", 767, 96, 987, 96));
     handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-normal.png", 767, 96, 987, 96));
     handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-overlay.png", 767, 96, 987, 96));
     handlers.push_back(std::make_unique<HandlerGeneric>("balatro", "ref/balatro-win.png", 767, 96, 987, 96));
+    handlers.push_back(std::make_unique<HandlerGeneric>("dd", "ref/dd-menu.png", 686, 1236, 618, 1260, 1));
+    handlers.push_back(std::make_unique<HandlerGeneric>("dd", "ref/dd-nav.png", 661, 318, 677, 799));
+    handlers.push_back(std::make_unique<HandlerGeneric>("dd", "ref/dd-nav-hover.png", 661, 318, 677, 799));
+    handlers.push_back(std::make_unique<HandlerDDFight>());
     handlers.push_back(std::make_unique<HandlerGeneric>("ftl", "ref/ftl.png", 17, 14, 40, 90));
     handlers.push_back(std::make_unique<HandlerGeneric>("sts", "ref/sts.png", 0, 0, 17, 1877));
     return handlers;
@@ -46,6 +54,7 @@ std::map<std::string, dim> init_cache() {
 }
 
 int main(int argc, char* argv[]) {
+    bool debug = argc > 1 && !strcmp(argv[1], "-d");
     auto cache = init_cache();;
     auto handlers = init_handlers();
 
@@ -59,6 +68,7 @@ int main(int argc, char* argv[]) {
     }
     struct dirent *d;
 
+    int ret = 0;
     while ((d = readdir(input))) {
         std::string name = d->d_name, fullpath = std::string(INPUT_DIR) + "/" + name;
         if (!name.ends_with(".png")) continue;
@@ -72,7 +82,7 @@ int main(int argc, char* argv[]) {
 
         std::string dir;
         for (const auto &handler : handlers) {
-            if (handler->dims() == img.dims() && handler->test(img)) {
+            if (handler->dims() == img.dims() && handler->test(img, debug)) {
                 dir = handler->dir();
                 break;
             }
@@ -85,11 +95,19 @@ int main(int argc, char* argv[]) {
             }
         } else {
             std::cout << "found match, moving to " << dir << std::endl;
-            rename(fullpath.c_str(), (std::string(OUTPUT_DIR) + "/" + dir + "/" + name).c_str());
+            auto dst = OUTPUT_DIR + ("/" + dir);
+            if (rename(fullpath.c_str(), (dst + "/" + name).c_str())) {
+                mkdir(dst.c_str(), 0777);
+                if (rename(fullpath.c_str(), (dst + "/" + name).c_str())) {
+                    perror("rename failed");
+                    ret = 1;
+                    break;
+                }
+            }
         }
     }
 
     cachefile.close();
     closedir(input);
-    return 0;
+    return ret;
 }

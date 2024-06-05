@@ -21,7 +21,8 @@ public:
     Image &operator=(const Image &other) = delete;
     ~Image();
     dim dims() const;
-    bool differs(const Image &other, int y, int x) const;
+    bool differs(const Image &other, int y, int x, int threshold) const;
+    std::string pxstr(int y, int x) const;
 };
 
 #endif
